@@ -159,7 +159,7 @@ def simple_advise(
     pst = PreflopState(
         hero_cards=hero_cards,
         position=position_val,
-        facing_bets=facing_bets_val   # now it's a dict
+        facing_bets=facing_bets_val
     ) 
 
 
@@ -194,7 +194,7 @@ async def street_advise(request: Request):
 
     opponents = int(opponents_raw)
 
-    # ⬇️ CHANGE HERE — postflop action parser
+    # Postflop action parser
     from .decision import parse_villain_action
     facing_action = parse_villain_action(raw_action)
 

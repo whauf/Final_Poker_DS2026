@@ -725,10 +725,8 @@ def preflop_equity_vs_range(hero_cards, villain_range, trials=30000):
     """
     Monte Carlo simulation of equity preflop vs a specific villain range.
 
-    BUG-FIXED:
-      - Handles empty villain_range safely
-      - Avoids hero/villain card collisions
-      - Avoids deck.remove(x) errors
+    Handles empty villain_range safely, avoids hero/villain card collisions,
+    and prevents deck.remove(x) errors.
     """
     # --- SAFETY CHECK FOR EMPTY RANGE ---
     if not villain_range:
@@ -736,7 +734,7 @@ def preflop_equity_vs_range(hero_cards, villain_range, trials=30000):
             "win_rate": 0.5,
             "tie_rate": 0.0,
             "equity": 0.5,
-            "reason": "⚠ Villain range empty — using neutral 50% equity",
+            "reason": "Warning: Villain range empty — using neutral 50% equity",
         }
 
     hero = [eval7.Card(c) for c in hero_cards]
@@ -765,7 +763,7 @@ def preflop_equity_vs_range(hero_cards, villain_range, trials=30000):
                 c1 = f"{r1}{s1}"
                 c2 = f"{r2}{s2}"
 
-                # *** AVOID HERO CARD COLLISIONS ***
+                # Avoid hero card collisions
                 if c1 in hero_set or c2 in hero_set:
                     continue
 
@@ -783,7 +781,7 @@ def preflop_equity_vs_range(hero_cards, villain_range, trials=30000):
             "win_rate": 0.5,
             "tie_rate": 0.0,
             "equity": 0.5,
-            "reason": "⚠ All villain combos collided with hero — using neutral equity",
+            "reason": "Warning: All villain combos collided with hero — using neutral equity",
         }
 
     wins = ties = total = 0

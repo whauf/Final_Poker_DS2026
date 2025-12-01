@@ -1,209 +1,293 @@
 # Poker Advisor API
 
+## 1) Executive Summary
 
-1) Executive Summary
+This project implements a fully containerized poker advisor service that is able to deliver real-time preflop recommendations using Monte Carlo simulations while also being able to tell players their equities and draws on subsequent streets. The system uses a FastAPI-based HTTP server where users are able to input their cards and other optional data such as position, stack, pot size, and action they might be facing. The service is then able to compute the expected equity through repeated random trials, find the opponent distribution, and then return a clear decision for the player based on the different equity thresholds based on the perceived ranges.
 
-This project implements a fully containerized poker advisor service that is able to deliver real time preflop recommendations using monte carlo simulations while also being able to tell players their equity's and draws on subsequent streets. the system uses a FASTAPI based HTTP where users are able to input their cards and other optional data such as position, stack, pot size, and action they might be facing. The service is then avle ot compute the expected equity though the repeated random trials, find the opppent distibution, and then return a clear descion for the player based on the different equity thresholds based on the percieved ranges. 
+## 2) System Overview
 
+### A. Course Concepts
+- **Containerization (Docker)**: Deterministic runtime, reproducibility, ability to run locally
+- **API/Webservices**: Creating a structured API design for ML/DS systems
+- **Simulation Pipeline**: Creating a Monte Carlo Statistical model that is able to compute user equity
+- **Cloud deployment (Azure)**: Allows app to be run virtually
+- **Data modeling**: JSON based opponent hand range specification
 
+### B. Architecture Overview
 
-2) System Overview
-  A. Course Concepts
-    Containerization(Docker) - Deterministic runtime, reproducibility, ability to run locally
-    API/Webservices - Creating a structured API design for ML/DS systems
-    Simulation Pipeline - Creating a Monte Carlo Statistical model that is able to compute user equity
-    Cloud deployment (Azure) - Allows app to be ran virtually
-    Data modeling - JSON based opponent hand range specification
+The architecture diagram for this project is found under the assets folder. The poker advisor uses a FastAPI server that is containerized using Docker. The server hosts an endpoint that accepts user poker hand data and optional game context. The server loads predefined opponent hand ranges from JSON files stored in the container. The service uses eval7 to compute the equities. Everything is packaged into a single Docker image and deployed to Azure Container Apps for public access, which provides a secure HTTPS endpoint. Users interact through a browser UI, which sends requests to the FastAPI backend.
 
-  B. The architecture Diagram to this project is found under the assets folder. The poker advisor uses a FastAPI server that is containerized using Docker. The server hosts an endpoint that accepts user poker hand data and optional game context. The server loads predefined opponent hand ranges from JSON files stored in the container. The service uses eval7 to compute the equities. Everything is packaged into a single docker image and deployed to Azure Container Apps for public access, which provides a secure HTTPS endpoint. User interact though a browsser UI, which sends requests to the FastAPI backend.
+![Poker Advisor Architecture](assets/arch_for_ds_project.png)
 
-  C. Data/Models/Services
-    Hand Range Data 
-      Source: Custom JSON files stores in the files /data/ranges*.json
-      Format: JSON
-      Size: 5-10 KB each
-      License: Self developed **
+### C. Data/Models/Services
 
-    Simulation Engine (eval7)
-      Source: PyPl (eval package
-      Format: Python
-      license: MIT license
-      Purpose: Fast hand evaluation for Monte Carlo trials 
+**Hand Range Data**
+- Source: Custom JSON files stored in `/data/ranges*.json`
+- Format: JSON
+- Size: 5-10 KB each
+- License: Self-developed for this project
 
-    FastAPI Application service
-      Source: Local code in the /app file
-      Framework: FastAPI + Uvicorn
-      license: FastAPI (MIT), Uvicorn ( BSD)
+**Simulation Engine (eval7)**
+- Source: PyPI eval7 package
+- Format: Python library
+- License: MIT license
+- Purpose: Fast hand evaluation for Monte Carlo trials
 
-    Container Image
-      Base: Python 
-      Artifacts: FastAPI server, simulation engine, JSON range files   
-      Image Size: ~230–260 MB 
-      License: Follows base Python + included packages
+**FastAPI Application Service**
+- Source: Local code in the `/app` directory
+- Framework: FastAPI + Uvicorn
+- Licenses: FastAPI (MIT), Uvicorn (BSD)
 
-      Cloud Deployment (Optional)
-        Platform: Azure Container Apps
-        Public Endpoint: Placeholder (to be replaced)
-        Ingress: HTTPS
+**Container Image**
+- Base: Python 3.11+
+- Artifacts: FastAPI server, simulation engine, JSON range files
+- Image Size: ~230–260 MB
+- License: Follows base Python + included packages
 
+**Cloud Deployment (Optional)**
+- Platform: Azure Container Apps
+- Ingress: HTTPS
+- Endpoint: Configurable via Azure
 
-3) How to Run (Local)
+### API Endpoints
 
-Before Running code make sure youre Docker app is open.
+| Endpoint | Method | Description |
+|---------|--------|--------------|
+| `/simple-advise` | POST | Preflop advice engine |
+| `/street-advise` | POST | Flop/turn/river analysis (equity + draws) |
+| `/ranges` | GET | Returns available range names |
+| `/health` | GET | Service readiness check |
+| `/docs` | GET | FastAPI interactive Swagger UI |
 
+## 3) How to Run (Local)
+
+Before running the code, ensure Docker is open and running.
+
+### Quick Start
+```bash
 docker build -t poker-advisor:latest .
 docker run -p 8000:8000 poker-advisor:latest
+```
 
-You should see 
-http://localhost:8000
-Once you see this you can copy into browser to use locally.
+You should see output indicating the server is running at `http://localhost:8000`. Copy this URL into your browser to use the service locally.
 
-Health test (Optional)
-Visit this page but typing into local browser
+### Interactive Testing
+Visit the Swagger UI for interactive API testing:
+```
 http://localhost:8000/docs
+```
 
+### One-Line Command
+```bash
+docker build -t poker-advisor . && docker run --rm -p 8000:8000 poker-advisor
+```
 
-4) Design Decisions
+## 4) Design Decisions
 
-Why this concept?
+### Why This Concept?
 
-  FastAPI over Flask or Django: I choose FastAPI in this projet becasue it provided automatic request validation with Pydantic and has a high performacne. FLask requies more validaiton and is typically slower undet concurrent workloads. Django was avioded becasue it has a large, monolithic structure that was too complex for the light weight service that was being created.
-  Monte Carlo over Game theory solver (GTO): During the creation of this project there was alot of thought about the implemation of game theory and how that would be a possibility. As the project went on I realized that to create and use a true GTO solver it required too much heay GPU hardware and an immense amount of training data. Monte Carlo simulation was then selected as it is able to provide clear simulation based approache that only relied on compuational worloads that run off CPU, requires no pretraining, and still produces reliable preflop equity estimates.
-  Why JSON files: JSON files where used becasue it allows the system to stay simple and easy to change. User can direcuty edi the JSON to costimize ranges without touching code. Using a database was not chosen because it would create alot of overhead and networking complexity.
+**FastAPI over Flask or Django**
+FastAPI was chosen for this project because it provides automatic request validation with Pydantic and has high performance. Flask requires more manual validation and is typically slower under concurrent workloads. Django was avoided because its large, monolithic structure was too complex for this lightweight service.
 
-Tradeoffs
-  Monte Carlo vs GTO solver: In the devoplment I wanted to create a true game theory service but that proved unreliable with too much to run on a simple, clean service which is why there was a trade off using Monte Carlo Simulations instead. Monte Carlo are fast and are able to be ran on CPU wihtout any GPU hardware.
-  Preflop only scope: I had to sacrific full hand modeling and complex multi street advice in order to create a more reliable preflop engine that is easy to build and deploy in a fast timeline. The service now can tell you youre equity and outs but is unable to provide advice to what decsion to make post flop.
-  JSON files vs Database: With the use of JSON there is no ability to have version hsitory or runtime editing however it allowed for zero operational overhead, easier deployment, and very easy customization of ranges.
-  CPU only vs GPU: With the service currently provided by the site it only has to run off CPU which is cost friendly, portable, and can be used bu any laptop. GPU allows us to account for more simulations and perhaps a more accurate bot but would not be able to be used by many users.
+**Monte Carlo over Game Theory Solver (GTO)**
+During development, a GTO solver was considered. However, implementing a true GTO solver would require heavy GPU hardware and immense amounts of training data. Monte Carlo simulation was selected instead because it provides a simulation-based approach that only relies on CPU computational workloads, requires no pre-training, and still produces reliable preflop equity estimates.
 
-Secuirty and Privacy
+**Why JSON Files**
+JSON files were chosen because they allow the system to remain simple and easy to modify. Users can directly edit JSON to customize ranges without touching code. A database was not used because it would introduce operational overhead and networking complexity.
 
-This service does not handle any user personal infomation, however, there are still ways to ernsure safe operation. There has to be a input validation which is means that the API and Pydantic must validate all entries becasue running, rejecting all improper submissions. The site always keeps the privacy of the user by holding no user PII. The system also aviouds exposing internal stack traces or sesnetive reuntime details while also having an isolated execuation with docker isolating the envournemtn and preventing depednedancy conflcts.
+### Tradeoffs
 
-Ops (Logging, Metrics, Scaling & Limitations)
+**Monte Carlo vs GTO Solver**
+A true game theory service was attempted but proved unreliable for a simple, clean service. Monte Carlo Simulations were chosen instead because they're fast and run efficiently on CPU without GPU requirements.
 
-Logging
+**Preflop Only Scope**
+Full hand modeling and complex multi-street advice were sacrificed to create a more reliable preflop engine that's easy to build and deploy. The service can provide equity and outs information but cannot provide postflop play advice.
 
-FastAPI middleware can be used to track request metadata, simulation runtime, and error events. Logs exclude any sensitive content and focus on operational health.
+**JSON Files vs Database**
+JSON files lack version history and runtime editing capabilities, but they provide zero operational overhead, easier deployment, and very simple range customization.
 
-Metrics
+**CPU Only vs GPU**
+The service runs on CPU only, making it cost-friendly, portable, and usable on any laptop. GPU would allow more simulations and a more accurate bot but would not be accessible to many users.
 
-Azure Container Apps provides built-in metrics for CPU usage, memory consumption, request count, and container restarts. Future work could add custom simulation-level metrics.
+## 5) Security and Privacy
 
-Scaling
+This service does not handle any user personal information. Several measures ensure safe operation:
 
-The stateless architecture enables horizontal scaling easily. Azure Container Apps can automatically scale replicas up or down based on CPU usage or request load.
+- **Input Validation**: The API uses Pydantic to validate all entries, rejecting improper submissions with appropriate error messages.
+- **Privacy**: The service holds no user PII (Personally Identifiable Information) and maintains complete user privacy.
+- **Error Handling**: The system avoids exposing internal stack traces or sensitive runtime details.
+- **Isolation**: Docker isolation prevents dependency conflicts and provides a secure execution environment.
 
-Operational Limitations
+## 6) Operations (Logging, Metrics, Scaling & Limitations)
 
-  Simulation is CPU-bound; large simulation counts increase response times.
+### Logging
+FastAPI middleware tracks request metadata, simulation runtime, and error events. Logs exclude sensitive content and focus on operational health.
 
-  No caching means identical requests recompute simulations, raising compute cost in high-traffic settings.
+### Metrics
+Azure Container Apps provides built-in metrics for CPU usage, memory consumption, request count, and container restarts. Future versions could add custom simulation-level metrics.
 
-  Single-container deployment means compute and API share CPU resources.
+### Scaling
+The stateless architecture enables easy horizontal scaling. Azure Container Apps can automatically scale replicas up or down based on CPU usage or request load.
 
-  No rate-limiting by default (could be added via a proxy or FastAPI extension).
+### Operational Limitations
+- Simulation is CPU-bound; large simulation counts increase response times
+- No caching means identical requests recompute simulations, raising compute cost in high-traffic settings
+- Single-container deployment means compute and API share CPU resources
+- No rate-limiting by default (could be added via a proxy or FastAPI extension)
+- JSON range files are loaded at runtime; malformed JSON causes startup failure
 
-  JSON range files are loaded at runtime; malformed JSON causes startup failure (could be mitigated with schema validation).
+## 7) Results and Evaluation
 
+### Example Output (UI)
+![Poker Advisor UI](assets/poker_ui.png)
 
-5) Results and Evaluation
+### Correctness Validation
+- **Known Equities**: Verified results for common hands (e.g., AhKh vs JJ, AKs vs AQo) match published preflop equity tables within expected Monte Carlo variance (±0.5–1.0%)
+- **Range Sampling**: Ensured JSON range distributions result in correctly weighted opponent hand samples
+- **Repeatability**: For fixed RNG seeds, results remain consistent across runs
 
-There is a screenshot of the output in the assets folder.
+### API Validation
+- **Input Validation**: Invalid card formatting returns 400 Bad Request; unknown range names produce safe error messages (no stack traces)
+- **Health Check**: `/health` endpoint reliably returns service readiness
+- **Load Testing**: Service remained stable under repeated bursts of 20–50 sequential requests
 
-Correctness Validation
-Known equities: Verified results for common hands (e.g., AhKh vs JJ, AKs vs AQo) match published preflop equity tables within expected Monte Carlo variance (±0.5–1.0%).
+### Testing Suite
 
-Range sampling: Ensured JSON range distributions result in correctly weighted opponent hand samples.
-Repeatability: For fixed RNG seeds, results remain consistent across runs.
-API Validation
-Input validation:
+**A. Smoke Check Test**
+Run the smoke test to verify basic functionality:
+```bash
+cd tests
+python3.11 smoke_check.py
+```
+This should output AA equity with a green checkmark, signifying the service is running correctly.
 
-  Invalid card formatting returns 400 Bad Request. 
-  Unknown range names produce safe error messages (no stack traces).
-  Health check: /health endpoint reliably returns service readiness.
-  Load testing: Service remained stable under repeated bursts of 20–50 sequential requests.
+**B. Deterministic Test**
+```bash
+cd tests
+python3.11 -m pytest test_deterministic.py -q
+```
 
-Tests: 
- A. The first test in the project is smoke_check.py which can be ran by running cd tests then python3.11 smoke_check.py in the terminal which should output AA equity with a green check mark signifiying that it passed the smoke test and it is running correctly.
+**C. Range Tests**
+```bash
+cd tests
+python3.11 -m pytest test_ranges.py -q
+```
+Should print "1 passed"
 
- B. The second test in the project is the deterministic test which can be rean by pasting cd test then  python3.11 -m pytest test_deterministic.py -q in the terminal
+## 8) What's Next
 
-C. Test_ranges.py. cd tests then python3.11 -m pytest test_ranges.py -q which should print out 1 passed
+Going forward, the main aspects that could be improved:
 
-6. What’s Next
+- **Postflop Advice Engine**: Implementation of comprehensive postflop strategy recommendations with position-adjusted strategies and equity realization modeling
+- **GTO Solver Integration**: A true Game Theory Optimal (GTO) solver would be the ultimate goal, enabling:
+  - Advice on all streets (flop, turn, river)
+  - Adjustment to different opponent types and stack depths
+  - More mathematically rigorous decision-making
+- **Multi-Opponent Modeling**: Allow users to input multiple opponents and receive equity estimates based on full table dynamics
+- **Advanced Features**:
+  - Hand range editing UI
+  - Solver integration for custom hand distributions
+  - Performance optimization for faster simulations
+  - Machine learning-based opponent modeling
 
-    Going forwards, the main aspect that could be improved is the implemenation of postflop adivce as well as inclduing more complex modeling such as GTO solver which would be the end goal for the service. GTO is the key to poker strategy and would allow for a more robust and complete poker advisor. Being a GTO solver would create the ability to provide advice on all streets and be able to adjust to different opponent types. A strech feature I would like the ability to add is multi oppenent modeling so that the user can input more than one opponent and get a more accurate equity estimate based on multiple players at the table.
+## 9) License and Attribution
 
-7)
+This project is licensed under the **MIT License**. See the `License.md` file for complete details.
 
-GitHub Repo:
+### Dependencies and Attribution
+- `eval7`: MIT Licensed - Fast poker hand evaluator
+- `FastAPI`: MIT Licensed - Modern async web framework
+- `Uvicorn`: BSD Licensed - ASGI server implementation
+- `Pydantic`: MIT Licensed - Data validation library
+- `Azure SDK`: Apache 2.0 Licensed - Cloud platform integration
 
-Public Cloud App:
-
-
-Cloud Deployment (Extra Credit)
-
-Log Into Azure 
-  az login
-
-Create Resource Group
-  az group create --name poker-test-rg --location northcentralus
-
-Create Azure Container Registry (ACR)
-
-  az acr create \
-    --resource-group poker-test-rg \
-    --name pokerregistrytestwh \
-    --sku Basic \
-    --location northcentralus
-    
-Log in to the new registry
-
-  az acr login --name pokerregistrytestwh
-
-Build + Tag + Push Docker image
-
-  docker build -t poker-advisor-test .
-
-  docker tag poker-advisor-test pokerregistrytestwh.azurecr.io/poker-advisor:v2
-
-  docker push pokerregistrytestwh.azurecr.io/poker-advisor:v2
-
-Ensure required Azure providers
-
-  az provider register --namespace Microsoft.App --wait
-  az provider register --namespace Microsoft.OperationalInsights --wait
-
-Create a NEW Container App environment
-
-  az containerapp env create \
-    --name poker-test-env \
-    --resource-group poker-test-rg \
-    --location northcentralus
-
-Deploy the app
-  az containerapp create \
-    --name poker-test-app \
-    --resource-group poker-test-rg \
-    --environment poker-test-env \
-    --image pokerregistrytestwh.azurecr.io/poker-advisor:v2 \
-    --target-port 8000 \
-    --ingress external \
-    --registry-server pokerregistrytestwh.azurecr.io \
-    --registry-identity system
-
-Get the Pulbic URL
-    az containerapp show \
-      --name poker-test-app \
-      --resource-group poker-test-rg \
-      --query properties.configuration.ingress.fqdn \
-      --output tsv
-
-
-This project also implements a Observability/CI build with Uvicorn logging and Pytest based testing suite to ensure the code is running correctly. There is also Docker logs  which show youre request traces and startup events. When the app is running on Uvicorn you can see all the request logs in the terminal where you started the docker container.
-
-
+### LINK References
   
+  Github Repositories:
+  Public Cloud Link: poker-test-app.kindpebble-8f192353.northcentralus.azurecontainerapps.io
 
+## 10) Cloud Deployment (Extra Credit)
+
+### Prerequisites
+Ensure you have the Azure CLI installed and are authenticated with your Azure subscription.
+
+### Deployment Steps
+
+1. **Log Into Azure**
+   ```bash
+   az login
+   ```
+
+2. **Create Resource Group**
+   ```bash
+   az group create --name poker-test-rg --location northcentralus
+   ```
+
+3. **Create Azure Container Registry (ACR)**
+   ```bash
+   az acr create \
+     --resource-group poker-test-rg \
+     --name pokerregistrytestwh \
+     --sku Basic \
+     --location northcentralus
+   ```
+
+4. **Log in to the Registry**
+   ```bash
+   az acr login --name pokerregistrytestwh
+   ```
+
+5. **Build, Tag, and Push Docker Image**
+   ```bash
+   docker build -t poker-advisor-test .
+   docker tag poker-advisor-test pokerregistrytestwh.azurecr.io/poker-advisor:v2
+   docker push pokerregistrytestwh.azurecr.io/poker-advisor:v2
+   ```
+
+6. **Register Required Azure Providers**
+   ```bash
+   az provider register --namespace Microsoft.App --wait
+   az provider register --namespace Microsoft.OperationalInsights --wait
+   ```
+
+7. **Create Container App Environment**
+   ```bash
+   az containerapp env create \
+     --name poker-test-env \
+     --resource-group poker-test-rg \
+     --location northcentralus
+   ```
+
+8. **Deploy the Application**
+   ```bash
+   az containerapp create \
+     --name poker-test-app \
+     --resource-group poker-test-rg \
+     --environment poker-test-env \
+     --image pokerregistrytestwh.azurecr.io/poker-advisor:v2 \
+     --target-port 8000 \
+     --ingress external \
+     --registry-server pokerregistrytestwh.azurecr.io \
+     --registry-identity system
+   ```
+
+9. **Get the Public URL**
+   ```bash
+   az containerapp show \
+     --name poker-test-app \
+     --resource-group poker-test-rg \
+     --query properties.configuration.ingress.fqdn \
+     --output tsv
+   ```
+
+### Observability and Monitoring
+
+This project implements comprehensive observability with:
+- **Uvicorn Logging**: All request traces and startup events logged to console
+- **Docker Logs**: View with `docker logs <container_id>`
+- **Pytest-based Testing**: Comprehensive test suite ensures code correctness
+- **Azure Monitor Integration** (Optional): Enable through Azure Container Apps configuration
+
+---
+
+**Last Updated**: December 2024

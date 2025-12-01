@@ -91,18 +91,21 @@ def parse_facing_bets(text: str) -> dict:
             break
 
     # Detect raise size
-    size_match = re.search(r"(\d+(\.\d+)?)\s*(bb|x)", text)
+    # Allow "10", "10bb", "10x", "10.5"
+    size_match = re.search(r"(\d+(\.\d+)?)\s*(bb|x)?", text)
     size = float(size_match.group(1)) if size_match else None
 
     # Classify action type
     if "3bet" in text or "3-bet" in text:
-        action = "3bet"
+        action = "raise"  # Convert 3bet to raise
     elif "raises" in text or "raise" in text:
         action = "raise"
+    elif "bets" in text or "bet" in text:
+        action = "raise"  # Convert preflop bet to raise (no betting preflop in NLHE)
     elif "open" in text:
-        action = "open"
+        action = "raise"  # Convert open to raise
     else:
-        action = "unknown"
+        action = None  # Return None instead of "unknown" for no action
 
     return {
         "action": action,
