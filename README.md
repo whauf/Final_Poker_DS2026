@@ -17,7 +17,7 @@ This project implements a fully containerized poker advisor service that is able
 
 The architecture diagram for this project is found under the assets folder. The poker advisor uses a FastAPI server that is containerized using Docker. The server hosts an endpoint that accepts user poker hand data and optional game context. The server loads predefined opponent hand ranges from JSON files stored in the container. The service uses eval7 to compute the equities. Everything is packaged into a single Docker image and deployed to Azure Container Apps for public access, which provides a secure HTTPS endpoint. Users interact through a browser UI, which sends requests to the FastAPI backend.
 
-![Poker Advisor Architecture](assets/arch_for_ds_project.png)
+![Poker Advisor Architecture](assets/architecture.png)
 
 ### C. Data/Models/Services
 
