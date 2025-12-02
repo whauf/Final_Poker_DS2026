@@ -203,7 +203,7 @@ This project is licensed under the **MIT License**. See the `License.md` file fo
 
 ### LINK References
   
-  Github Repositories:
+  Github Repositories: https://github.com/whauf/Final_Poker_DS2026
   Public Cloud Link: poker-test-app.kindpebble-8f192353.northcentralus.azurecontainerapps.io
 
 ## 10) Cloud Deployment (Extra Credit)
@@ -290,4 +290,3 @@ This project implements comprehensive observability with:
 
 ---
 
-**Last Updated**: December 2024
